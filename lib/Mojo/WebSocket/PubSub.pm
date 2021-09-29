@@ -8,7 +8,7 @@ use warnings;
 
 __END__
 
-# ABSTRACT: descrizione del modulo
+# ABSTRACT: A Mojolicious publish/subscribe channels based on websocket.
 
 =pod
 
