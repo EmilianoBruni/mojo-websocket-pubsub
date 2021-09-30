@@ -66,14 +66,14 @@ subtest 'pong' => sub {
     )->catch( sub { fail('lost') } )->wait;
 };
 
-subtest 'join' => sub {
+subtest 'listen' => sub {
     my $ch = 'foo';
     new Mojo::Promise(
         sub {
             my ( $r, $f ) = @_;
-            $syn->on( 'join' => sub { $r->( $_[1] ) } );
+            $syn->on( 'listen' => sub { $r->( $_[1] ) } );
             Mojo::IOLoop->timer( 5 => sub { $f->() } );
-            my $join = $syn->join($ch);
+            my $join = $syn->listen($ch);
             $syn->parse( $join );
         }
     )->then(
@@ -85,15 +85,15 @@ subtest 'join' => sub {
     )->catch( sub { fail('lost') } )->wait;
 };
 
-subtest 'joined' => sub {
+subtest 'listened' => sub {
     my $ch = 'foo';
     new Mojo::Promise(
         sub {
             my ( $r, $f ) = @_;
-            $syn->on( 'joined' => sub { $r->( $_[1] ) } );
+            $syn->on( 'listened' => sub { $r->( $_[1] ) } );
             Mojo::IOLoop->timer( 5 => sub { $f->() } );
-            my $join = $syn->join($ch);
-            my $joined = $syn->joined($join);
+            my $join = $syn->listen($ch);
+            my $joined = $syn->listened($join);
             $syn->parse($joined);
         }
     )->then(
@@ -110,9 +110,9 @@ subtest 'message client to server' => sub {
     new Mojo::Promise(
         sub {
             my ( $r, $f ) = @_;
-            $syn->on( 'mc2s' => sub { $r->( $_[1] ) } );
+            $syn->on( 'notify' => sub { $r->( $_[1] ) } );
             Mojo::IOLoop->timer( 5 => sub { $f->() } );
-            my $mc2s = $syn->mc2s($msg);
+            my $mc2s = $syn->notify($msg);
             $syn->parse($mc2s);
         }
     )->then(
@@ -130,10 +130,10 @@ subtest 'message server to brodcast' => sub {
     new Mojo::Promise(
         sub {
             my ( $r, $f ) = @_;
-            $syn->on( 'ms2b' => sub { $r->( $_[1] ) } );
+            $syn->on( 'broadcast_notify' => sub { $r->( $_[1] ) } );
             Mojo::IOLoop->timer( 5 => sub { $f->() } );
-            my $mc2s = $syn->mc2s($msg);
-            my $ms2b = $syn->ms2b($mc2s, $from);
+            my $mc2s = $syn->notify($msg);
+            my $ms2b = $syn->broadcast_notify($mc2s, $from);
             $syn->parse($ms2b);
         }
     )->then(

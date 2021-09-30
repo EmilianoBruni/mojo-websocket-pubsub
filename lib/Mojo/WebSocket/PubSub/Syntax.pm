@@ -3,48 +3,48 @@ package Mojo::WebSocket::PubSub::Syntax;
 use Mojo::Base 'Mojo::EventEmitter';
 use Time::HiRes qw(gettimeofday);
 
-has 'lang_lookup' => \&_lang_lookup;
+has 'lookup' => \&_lookup;
 
 sub keepalive {
     return { t => 'k' };
 }
 
 sub ping() {
-    return { t => 'ping', cts => [gettimeofday] };
+    return { t => 'i', cts => [gettimeofday] };
 }
 
 sub pong {
     my $s = shift;
     my $ping = shift || return;
-    $ping->{t} = 'pong';
+    $ping->{t} = 'o';
     $ping->{sts} = [gettimeofday];
     return $ping;
 }
 
-sub join {
+sub listen {
     my $s = shift;
     my $ch = shift;
-    return {t => 'join', ch => $ch};
+    return {t => 'l', ch => $ch};
 }
 
-sub joined {
+sub listened {
     my $s = shift;
     my $join = shift || return;
-    $join->{t} = 'joined';
+    $join->{t} = 'd';
     return $join;
 }
 
-sub mc2s {
+sub notify {
     my $s = shift;
     my $msg = shift || return;
-    return {t => 'mc2s', msg => $msg};
+    return {t => 'n', msg => $msg};
 }
 
-sub ms2b {
+sub broadcast_notify {
     my $s = shift;
     my $msg = shift || return;
     my $from = shift || return;
-    $msg->{t} = 'ms2b';
+    $msg->{t} = 'b';
     $msg->{from} = $from;
 
     return $msg;
@@ -55,68 +55,46 @@ sub parse {
     my $msg = shift || return;
 
     my $cmd = $msg->{t};
-    return unless exists $s->lang_lookup->{$cmd};
-    my $ll = $s->lang_lookup->{$cmd};
+    return unless exists $s->lookup->{$cmd};
+    my $ll = $s->lookup->{$cmd};
 
-    $s->emit( all          => $ll->{cb}->( $s, $msg ) );
+    $s->emit( all          => $ll->{cb}->( $s, $ll->{event}, $msg ) );
     $s->emit( $ll->{event} => $ll->{cb}->( $s, $msg ) );
 }
 
-sub _lang_lookup {
+sub _lookup {
     my $s  = shift;
+    use DDP;
     my $ll = {
         k => {
             event => 'keepalive',
         },
-        ping => {
-            event => 'ping'
+        i => {
+            event => 'ping',
+            reply => sub { $s->pong($_[0]); },
         },
-        pong => {
-            event => 'pong'
+        o => {
+            event => 'pong',
         },
-        join => {
-            event => 'join'
+        l => {
+            event => 'listen',
+            reply => sub { $s->listened($_[0]); },
         },
-        joined => {
-            event => 'joined'
+        d => {
+            event => 'listened',
         },
-        mc2s => {
-            event => 'mc2s'
+        n => {
+            event => 'notify',
+            reply => sub { $s->broadcast_notify($_[0], $_[1]); },
         },
-        ms2b => {
-            event => 'ms2b'
+        b => {
+            event => 'broadcast_notify',
         },
     };
     foreach ( keys %$ll ) {
-        $ll->{$_}->{cb} = \&{ __PACKAGE__ . "::_exec_$_" };
+        $ll->{$_}->{cb} = sub {shift; return @_};
     }
     return $ll;
-}
-
-sub _exec_k { }
-
-sub _exec_ping {
-    return $_[1];
-}
-
-sub _exec_pong {
-    return $_[1];
-}
-
-sub _exec_join {
-    return $_[1];
-}
-
-sub _exec_joined {
-    return $_[1];
-}
-
-sub _exec_mc2s {
-    return $_[1];
-}
-
-sub _exec_ms2b {
-    return $_[1];
 }
 
 1;
