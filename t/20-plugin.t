@@ -4,7 +4,15 @@ use Mojo::Base 'Mojolicious';
 
 sub startup {
     my $s = shift;
-    $s->secrets( ['I love Mojolicious'] );
+    $s->plugin(
+        Config => {
+            default => {
+                secrets => ['I love Mojolicious'],
+                plugins =>
+                  [ { 'Mojolicious::Plugin::PubSub::WebSocket' => {} }, ]
+            }
+        }
+    );
 }
 
 package main;
@@ -19,13 +27,10 @@ my $syn = new Mojo::WebSocket::PubSub::Syntax;
 my $app = $t->app;
 my $r   = $app->routes;
 
-$app->plugin('Mojolicious::Plugin::PubSub::WebSocket');
-
-use DDP;
-
 sub j {
     return { json => shift };
 }
+
 
 subtest 'keepalive' => sub {
     $t->websocket_ok('/psws')->send_ok( j $syn->keepalive )
@@ -70,66 +75,33 @@ subtest 'multiple subscribers' => sub {
     my $ch   = 'channel1';
     my $smsg = j $syn->listen($ch);
     my @s;
-    my $i = 0;
-    push @s,
-      $t->websocket_ok('/psws')->send_ok($smsg)
-      ->message_ok( "Subscriber n. " . $i++ . " enter to channel" )
-      for ( 1 .. 10 );
-
-    my $notifier = shift @s;
-
+    my $i   = 0;
     my $msg = 'Hello World';
 
-    my $p = Mojo::Promise->new(
+    # create ten subscribers
+    push @s, $t->websocket_ok('/psws')->send_ok($smsg)->message_ok( 'Register subscriber n. ' . $_ )
+      for ( 1 .. 10 );
+
+    # the first notify
+    my $notifier = shift(@s);
+    $notifier->send_ok( j $syn->notify($msg) )
+      ->message_ok("Send message from notifier " );
+
+    my @p;
+
+    # client received notify
+    Mojo::Promise->map(
         sub {
-            my $r = shift;
-            $s[1]->message_ok("Subscriber msg rcvd");
-        }
-    );
-
-
-    # Mojo::Promise->new->resolve->then(
-    #     sub {
-    #         $notifier->send_ok( j $syn->notify($msg), "Subscriber 1 msg ok" );
-    #     }
-    # )->catch( sub { } );
-    # Mojo::IOLoop->timer(2 =>  sub {
-    #          $notifier->send_ok( j $syn->notify($msg), "Subscriber 1 msg ok" );
-    #      });
-    # say "Is running: " . Mojo::IOLoop->is_running;
-    # my @ps;
-    # @ps = map{ Mojo::Promise->new(
-    #     sub {
-    #         my $r = shift;
-    #         $_->message_ok("Subscriber msg rcvd");
-    #         $r->();
-    #     }
-    # )}  @s;
-    # push @ps, Mojo::Promise->new->resolve->then( sub {
-    #          $notifier->send_ok( j $syn->notify($msg), "Subscriber 1 msg ok" );
-    #      });
-    # push @ps, Mojo::Promise->new(sub {});
-    # use DDP;
-    # p @ps;
-    # my $p = Mojo::Promise->all(@ps)->wait;
-
-    # my $p = Mojo::Promise->map(
-    #     { concurrency => 0 },
-    #     sub {
-    #         Mojo::Promise->new(
-    #             sub {
-    #                 my $r = shift;
-    #                 $_->message_ok("Subscriber msg rcvd");
-    #                 $r->();
-    #             }
-    #         );
-    #     },
-    #     @s
-    # );
+            my $client = $_;
+            Mojo::IOLoop->subprocess->run_p(
+                sub {
+                    $client->message_ok("Subscriber recived notify")->message("rcvd");
+                }
+            );
+        },
+        @s
+    )->wait;
 
 };
-
-# $t->get_ok("/version")->status_is(200)->json_is( '/class' => $package )
-#   ->json_is( '/version' => $version );
 
 done_testing();
