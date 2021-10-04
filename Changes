@@ -1,4 +1,7 @@
 Revision history for perl module Mojo::WebSocket::PubSub
 
+0.02 2021-10-04T15:33:00
+    - Removed usage of ->%* syntax in code
+
 0.01 2021-10-04T15:15:00
     - First Version
