@@ -65,7 +65,7 @@ sub psws_reply {
             my $msg = $req->{msg};
             my $ch  = $c->psws_clients->{$id}->{channel};
             foreach
-              my $client ( grep !/$id/, keys $c->psws_channels->{$ch}->%* )
+              my $client ( grep !/$id/, keys %{$c->psws_channels->{$ch}} )
             {
                 $c->psws_clients->{$client}->{tx}->send( { json => $res } );
             }
