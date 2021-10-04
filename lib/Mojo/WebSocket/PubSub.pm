@@ -12,8 +12,6 @@ sub new {
     my $s = shift->SUPER::new(@_);
     $s->{syn} = new Mojo::WebSocket::PubSub::Syntax;
 
-    #my $ua = Mojo::UserAgent->new;
-
     # Open WebSocket to pubsub service
     $s->ua->websocket_p( $s->url )->then(
         sub {
@@ -138,6 +136,8 @@ __END__
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
+
+A Mojolicious publish/subscribe channels based on websocket.
 
 =head1 BUGS/CONTRIBUTING
 

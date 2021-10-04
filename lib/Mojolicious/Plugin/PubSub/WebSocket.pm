@@ -54,11 +54,6 @@ sub psws_reply {
     my $id = $c->tx->connection;
     $req->{id} = $id;
 
-    #unless ( $event eq 'keepalive' ) {
-    # don't log keepalive packets
-    #$c->app->log->debug( "PSWS: Get request from " . $id );
-    #$c->app->log->debug( "PSWS: " . np $req);
-    #}
     if ( $event eq 'listen' ) {
         my $ch = $req->{ch};
         $c->psws_channels->{$ch}->{$id} = 1;

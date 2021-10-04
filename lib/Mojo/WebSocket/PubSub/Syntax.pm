@@ -135,6 +135,8 @@ __END__
 
 =head1 DESCRIPTION
 
+Syntax parser/builder for communication in Mojo::WebSocket::PubSub
+
 =head1 BUGS/CONTRIBUTING
 
 Please report any bugs through the web interface at L<https://github.com/EmilianoBruni/mojo-websocket-pubsub/issues>
