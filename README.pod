@@ -1,0 +1,50 @@
+=pod
+
+=head1 NAME
+
+Mojo::WebSocket::PubSub - A Mojolicious publish/subscribe channels based on websocket.
+
+=for html <p>
+    <a href="https://github.com/emilianobruni/mojo-websocket-pubsub/actions/workflows/test.yml">
+        <img alt="github workflow tests" src="https://github.com/emilianobruni/mojo-websocket-pubsub/actions/workflows/test.yml/badge.svg">
+    </a>
+    <img alt="Top language: " src="https://img.shields.io/github/languages/top/emilianobruni/mojo-websocket-pubsub">
+    <img alt="github last commit" src="https://img.shields.io/github/last-commit/emilianobruni/mojo-websocket-pubsub">
+</p>
+
+=head1 VERSION
+
+version 0.01
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+A Mojolicious publish/subscribe channels based on websocket.
+
+=encoding UTF-8
+
+=head1 BUGS/CONTRIBUTING
+
+Please report any bugs through the web interface at L<https://github.com/EmilianoBruni/mojo-websocket-pubsub/issues>
+If you want to contribute changes or otherwise involve yourself in development, feel free to fork the Git repository from
+L<https://github.com/EmilianoBruni/mojo-websocket-pubsub/>.
+
+=head1 SUPPORT
+
+You can find this documentation with the perldoc command too.
+
+    perldoc Mojo::WebSocket::PubSub
+
+=head1 AUTHOR
+
+Emiliano Bruni <info@ebruni.it>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2021 by Emiliano Bruni.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
