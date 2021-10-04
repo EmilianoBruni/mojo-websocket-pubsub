@@ -1,15 +1,14 @@
 package Mojolicious::Plugin::PubSub::WebSocket;
 
-# ABSTRACT:
+# ABSTRACT: Plugin to implement PubSub protocol using websocket
 
 use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::WebSocket::PubSub::Syntax;
-use DDP;
-
 
 sub register {
     my ( $s, $app, $conf ) = @_;
     $app->log->debug( "Loading " . __PACKAGE__ );
+
 
     my $r = $app->routes;
 
@@ -18,19 +17,18 @@ sub register {
 
     $r->websocket('/psws')->to(
         cb => sub {
-            my $c = shift;
+            my $c   = shift;
             my $syn = new Mojo::WebSocket::PubSub::Syntax;
             $syn->on( 'all' => sub { $s->psws_reply( $c, @_ ) } );
-            $c->on(
-                json   => sub { $syn->parse($_[1]); }
-            );
+            $c->on( json => sub { $syn->parse( $_[1] ); } );
             $c->on(
                 finish => sub {
                     my ( $c, $code, $reason ) = @_;
                     my $id     = $c->tx->connection;
+                    return unless $c->isa('psws_clients');
                     my $client = $c->psws_clients->{$id};
                     delete $c->psws_channels->{ $client->{channel} }->{$id}
-                        if (exists $client->{channel});
+                      if ( exists $client->{channel} );
                     delete $c->psws_clients->{$id};
                     $c->app->log->debug( "PSWS: WebSocket "
                           . $c->tx->connection
@@ -58,26 +56,28 @@ sub psws_reply {
 
     #unless ( $event eq 'keepalive' ) {
     # don't log keepalive packets
-        #$c->app->log->debug( "PSWS: Get request from " . $id );
-        #$c->app->log->debug( "PSWS: " . np $req);
+    #$c->app->log->debug( "PSWS: Get request from " . $id );
+    #$c->app->log->debug( "PSWS: " . np $req);
     #}
-    if ($event eq 'listen') {
+    if ( $event eq 'listen' ) {
         my $ch = $req->{ch};
         $c->psws_channels->{$ch}->{$id} = 1;
         $c->psws_clients->{$id}->{channel} = $ch;
     }
-    if ( my $res_f = $syn->lookup->{$req->{t}}->{reply} ) {
-        my $res = $res_f->($req, $id);
-        if ($event eq 'notify') {
+    if ( my $res_f = $syn->lookup->{ $req->{t} }->{reply} ) {
+        my $res = $res_f->( $req, $id );
+        if ( $event eq 'notify' ) {
             my $msg = $req->{msg};
-            my $ch = $c->psws_clients->{$id}->{channel};
-            foreach my $client (grep !/$id/,keys $c->psws_channels->{$ch}->%*) {
-                $c->psws_clients->{$client}->{tx}->send({json => $res});
+            my $ch  = $c->psws_clients->{$id}->{channel};
+            foreach
+              my $client ( grep !/$id/, keys $c->psws_channels->{$ch}->%* )
+            {
+                $c->psws_clients->{$client}->{tx}->send( { json => $res } );
             }
-        } else {
-            #$c->app->log->debug( "PSWS: Send response to " . $id . np $res);
-            $c->tx->send( { json => $res } );
+            # now reply to sender
+            $res = $syn->notified($req);
         }
+        $c->tx->send( { json => $res } );
     }
 }
 

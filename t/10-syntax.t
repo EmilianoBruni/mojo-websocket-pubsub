@@ -124,6 +124,26 @@ subtest 'message client to server' => sub {
     )->catch( sub { fail('lost') } )->wait;
 };
 
+subtest 'message server to client' => sub {
+    my $msg = 'Hello World!';
+    new Mojo::Promise(
+        sub {
+            my ( $r, $f ) = @_;
+            $syn->on( 'notified' => sub { $r->( $_[1] ) } );
+            Mojo::IOLoop->timer( 5 => sub { $f->() } );
+            my $mc2s = $syn->notify($msg);
+            my $not = $syn->notified($mc2s);
+            $syn->parse($not);
+        }
+    )->then(
+        sub {
+            pass('received');
+            ok( exists $_[0]->{msg}, 'exists message' );
+            is( $_[0]->{msg}, $msg, 'correct message' );
+        }
+    )->catch( sub { fail('lost') } )->wait;
+};
+
 subtest 'message server to brodcast' => sub {
     my $msg = 'Hello World!';
     my $from = '123456789123456789';

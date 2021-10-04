@@ -40,6 +40,13 @@ sub notify {
     return {t => 'n', msg => $msg};
 }
 
+sub notified {
+    my $s = shift;
+    my $msg = shift || return;
+    $msg->{t} = 'm';
+    return $msg;
+}
+
 sub broadcast_notify {
     my $s = shift;
     my $msg = shift || return;
@@ -64,7 +71,6 @@ sub parse {
 
 sub _lookup {
     my $s  = shift;
-    use DDP;
     my $ll = {
         k => {
             event => 'keepalive',
@@ -85,7 +91,10 @@ sub _lookup {
         },
         n => {
             event => 'notify',
-            reply => sub { $s->broadcast_notify($_[0], $_[1]); },
+            reply => sub { $s->broadcast_notify($_[0], $_[1]) },
+        },
+        'm' => {
+            event => 'notified',
         },
         b => {
             event => 'broadcast_notify',
