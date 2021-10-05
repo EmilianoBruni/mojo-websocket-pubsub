@@ -5,7 +5,7 @@ use Mojo::WebSocket::PubSub::Syntax;
 use Mojo::UserAgent;
 use Mojo::IOLoop;
 
-has url => 'http://127.0.0.1:9069/pbws';
+has url => 'http://127.0.0.1:9069/psws';
 has tx  => undef;
 has ua  => sub { state $ua; $ua = Mojo::UserAgent->new };
 
@@ -37,7 +37,7 @@ sub new {
                 }
             );
             say "WebSocket connected";
-            #$s->_send_keepalive;
+            $s->_send_keepalive;
         }
     )->catch(
         sub {
