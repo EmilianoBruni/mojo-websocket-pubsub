@@ -2,6 +2,7 @@ package Mojo::WebSocket::PubSub;
 
 use Mojo::Base 'Mojo::EventEmitter';
 use Mojo::WebSocket::PubSub::Syntax;
+use Mojo::UserAgent;
 use Mojo::IOLoop;
 
 has url => 'http://127.0.0.1:9069/pbws';
