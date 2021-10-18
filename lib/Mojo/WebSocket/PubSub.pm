@@ -5,9 +5,10 @@ use Mojo::WebSocket::PubSub::Syntax;
 use Mojo::UserAgent;
 use Mojo::IOLoop;
 
-has url => 'http://127.0.0.1:9069/psws';
-has tx  => undef;
-has ua  => sub { state $ua; $ua = Mojo::UserAgent->new };
+has url            => 'http://127.0.0.1:9069/psws';
+has tx             => undef;
+has ua             => sub { state $ua; $ua = Mojo::UserAgent->new };
+has auto_keepalive => 1;
 
 sub new {
     my $s = shift->SUPER::new(@_);
@@ -21,9 +22,11 @@ sub new {
 
             # Wait for WebSocket to be closed
             $s->{syn}->on( all => sub { $s->_rcvd( $_[1], $_[2] ) } );
-            $s->{syn}->on( broadcast_notify => sub {
-                  $s->emit(notify => $_[1]->{msg} ) ;
-            } );
+            $s->{syn}->on(
+                broadcast_notify => sub {
+                    $s->emit( notify => $_[1]->{msg} );
+                }
+            );
             $s->tx->on(
                 finish => sub {
                     my ( $tx, $code, $reason ) = @_;
@@ -37,7 +40,7 @@ sub new {
                 }
             );
             say "WebSocket connected";
-            $s->_send_keepalive;
+            $s->_send_keepalive if ( $s->auto_keepalive );
         }
     )->catch(
         sub {
@@ -85,19 +88,40 @@ sub publish {
     return $ret;
 }
 
+sub keepalive {
+    my $s = shift;
+    Mojo::Promise->resolve->then( sub { $s->_send( $s->{syn}->keepalive ) } )
+      ->wait;
+    return 1;
+}
+
+sub ping {
+    my $s   = shift;
+    my $ret = 1;
+    new Mojo::Promise(
+        sub {
+            my ( $r, $f ) = @_;
+            $s->{syn}->on( 'pong' => sub { $r->( $_[1] ) } );
+            Mojo::IOLoop->timer( 5 => sub { $f->() } );
+            $s->_send( $s->{syn}->ping() );
+        }
+    )->catch( sub { $ret = 0 } )->wait;
+    return $ret;
+}
+
 sub _send {
     shift->tx->send( { json => shift } );
 }
 
 sub _send_keepalive {
+
     # send keepalive every inactivity_timeout/2
     state $tid;
     Mojo::IOLoop->remove($tid) if ($tid);
-    my $s = shift;
-    my $t2 = Mojo::IOLoop->stream($s->tx->connection)->timeout/2;
-    say $t2;
+    my $s  = shift;
+    my $t2 = Mojo::IOLoop->stream( $s->tx->connection )->timeout / 2;
     $tid = Mojo::IOLoop->recurring(
-         $t2 => sub {
+        $t2 => sub {
             $s->_send( $s->{syn}->keepalive );
         }
     );
@@ -105,7 +129,6 @@ sub _send_keepalive {
 
 sub _rcvd {
     my $s = shift;
-    #p @_;
 }
 
 1;
