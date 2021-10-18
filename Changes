@@ -1,5 +1,7 @@
 Revision history for perl module Mojo::WebSocket::PubSub
 
+0.05 2021-10-18T16:08:00
+    - Optimization while sending messages over websocket
 0.04 2021-10-05T15:38:00
     - Activate keepalive
 
