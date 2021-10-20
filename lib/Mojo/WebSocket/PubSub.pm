@@ -13,7 +13,11 @@ has auto_keepalive => 1;
 sub new {
     my $s = shift->SUPER::new(@_);
     $s->{syn} = new Mojo::WebSocket::PubSub::Syntax;
+    return $s;
+}
 
+sub connect {
+    my $s = shift;
     # Open WebSocket to pubsub service
     $s->ua->websocket_p( $s->url )->then(
         sub {
@@ -22,6 +26,8 @@ sub new {
 
             # Wait for WebSocket to be closed
             $s->{syn}->on( all => sub { $s->_rcvd( $_[1], $_[2] ) } );
+            $s->{syn}->on( all => sub { $s->emit( all => ($_[1], $_[2] ) ) } );
+            $s->{syn}->on( all => sub { $s->emit( $_[1] =>  $_[2] ) } );
             $s->{syn}->on(
                 broadcast_notify => sub {
                     $s->emit( notify => $_[1]->{msg} );
@@ -30,7 +36,7 @@ sub new {
             $s->tx->on(
                 finish => sub {
                     my ( $tx, $code, $reason ) = @_;
-                    say "WebSocket closed with status $code.";
+                    $s->emit("finish" => ($code, $reason));
                 }
             );
             $s->tx->on(
@@ -39,7 +45,7 @@ sub new {
                     $s->{syn}->parse($msg);
                 }
             );
-            say "WebSocket connected";
+            $s->emit("connected" => $s->url);
             $s->_send_keepalive if ( $s->auto_keepalive );
         }
     )->catch(
